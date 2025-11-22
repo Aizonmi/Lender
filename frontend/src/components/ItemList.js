@@ -10,9 +10,9 @@ const ItemList = () => {
     type: '',
   });
 
-  const fetchItems = async () => {
+  const fetchItems = async (showLoading = false) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       setError(null);
       const params = {};
       if (filter.available !== '') {
@@ -27,16 +27,12 @@ const ItemList = () => {
       setError(err.response?.data?.error?.message || 'Failed to fetch items');
       console.error('Error fetching items:', err);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchItems();
-    
-    // Refresh list every 5 seconds
-    const interval = setInterval(fetchItems, 5000);
-    return () => clearInterval(interval);
+    fetchItems(true); // Show loading only on initial load or filter change
   }, [filter]);
 
   const handleFilterChange = (e) => {
@@ -61,7 +57,8 @@ const ItemList = () => {
 
   return (
     <div>
-      <div style={{ marginBottom: '20px', display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
+      <div style={{ marginBottom: '20px', display: 'flex', gap: '15px', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+        <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
         <div style={{ minWidth: '200px' }}>
           <label htmlFor="filter-available" style={{ display: 'block', marginBottom: '5px', fontWeight: '600' }}>
             Filter by Availability:
@@ -95,8 +92,16 @@ const ItemList = () => {
             <option value="equipment">Equipment</option>
             <option value="electronic">Electronic</option>
             <option value="other">Other</option>
-          </select>
+            </select>
         </div>
+        </div>
+        <button 
+          className="btn btn-secondary" 
+          onClick={() => fetchItems(false)}
+          style={{ padding: '8px 16px', fontSize: '0.9rem', height: 'fit-content' }}
+        >
+          🔄 Refresh
+        </button>
       </div>
 
       {items.length === 0 ? (

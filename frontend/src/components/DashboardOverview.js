@@ -7,25 +7,20 @@ const DashboardOverview = ({ notifications }) => {
   const [overdueItems, setOverdueItems] = useState([]);
 
   useEffect(() => {
-    fetchStats();
+    fetchStats(true); // Show loading on initial load
     fetchOverdue();
-    
-    const interval = setInterval(() => {
-      fetchStats();
-      fetchOverdue();
-    }, 10000); // Refresh every 10 seconds
-    
-    return () => clearInterval(interval);
+    // Removed auto-refresh - use manual refresh button instead
   }, []);
 
-  const fetchStats = async () => {
+  const fetchStats = async (showLoading = false) => {
     try {
+      if (showLoading) setLoading(true);
       const response = await dashboardAPI.getStats();
       setStats(response.data.data);
     } catch (err) {
       console.error('Error fetching stats:', err);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
@@ -38,6 +33,11 @@ const DashboardOverview = ({ notifications }) => {
     }
   };
 
+  const handleRefresh = () => {
+    fetchStats(false);
+    fetchOverdue();
+  };
+
   if (loading) {
     return <div className="loading">Loading dashboard...</div>;
   }
@@ -48,15 +48,24 @@ const DashboardOverview = ({ notifications }) => {
 
   return (
     <div>
+      <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'flex-end' }}>
+        <button 
+          className="btn btn-secondary" 
+          onClick={handleRefresh}
+          style={{ padding: '8px 16px', fontSize: '0.9rem' }}
+        >
+          🔄 Refresh Dashboard
+        </button>
+      </div>
       {/* Statistics Cards */}
       <div className="stats-grid">
         <div className="stat-card" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
-          <h3>Total Members</h3>
+          <h3>Total Students</h3>
           <div className="value">{stats.overall.totalMembers}</div>
-          <div className="label">Registered users</div>
+          <div className="label">Registered students</div>
         </div>
         <div className="stat-card" style={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }}>
-          <h3>Total Items</h3>
+          <h3>Total Books</h3>
           <div className="value">{stats.overall.totalItems}</div>
           <div className="label">{stats.overall.availableItems} available</div>
         </div>
@@ -72,15 +81,15 @@ const DashboardOverview = ({ notifications }) => {
         </div>
       </div>
 
-      {/* Overdue Items Alert */}
-      {overdueItems.length > 0 && (
-        <div className="section">
-          <h2 style={{ color: '#e74c3c' }}>⚠️ Overdue Items ({overdueItems.length})</h2>
+        {/* Overdue Books Alert */}
+        {overdueItems.length > 0 && (
+          <div className="section">
+            <h2 style={{ color: '#e74c3c' }}>⚠️ Overdue Books ({overdueItems.length})</h2>
           <div className="table-container">
             <table>
               <thead>
                 <tr>
-                  <th>Item Title</th>
+                  <th>Book Title</th>
                   <th>Borrower</th>
                   <th>Due Date</th>
                   <th>Days Overdue</th>
@@ -113,17 +122,17 @@ const DashboardOverview = ({ notifications }) => {
         </div>
       )}
 
-      {/* Top 5 Most Borrowed Items */}
+      {/* Top 5 Most Borrowed Books */}
       <div className="section">
-        <h2>Top 5 Most Borrowed Items</h2>
+        <h2>Top 5 Most Borrowed Books</h2>
         {stats.mostBorrowedItems.length > 0 ? (
           <div className="table-container">
             <table>
               <thead>
                 <tr>
                   <th>Rank</th>
-                  <th>Item Title</th>
-                  <th>Type</th>
+                  <th>Book Title</th>
+                  <th>Author</th>
                   <th>Total Borrows</th>
                   <th>Currently Borrowed</th>
                 </tr>
@@ -133,7 +142,7 @@ const DashboardOverview = ({ notifications }) => {
                   <tr key={item.itemId}>
                     <td><strong>#{index + 1}</strong></td>
                     <td><strong>{item.title}</strong></td>
-                    <td style={{ textTransform: 'capitalize' }}>{item.type}</td>
+                    <td>{item.author || '-'}</td>
                     <td>{item.borrowCount}</td>
                     <td>{item.activeBorrows}</td>
                   </tr>
@@ -146,16 +155,16 @@ const DashboardOverview = ({ notifications }) => {
         )}
       </div>
 
-      {/* Top 5 Members by Borrow Count */}
+      {/* Top 5 Students by Borrow Count */}
       <div className="section">
-        <h2>Top 5 Members by Borrow Count</h2>
+        <h2>Top 5 Students by Borrow Count</h2>
         {stats.borrowCountsByMember.length > 0 ? (
           <div className="table-container">
             <table>
               <thead>
                 <tr>
                   <th>Rank</th>
-                  <th>Member Name</th>
+                  <th>Student Name</th>
                   <th>Email</th>
                   <th>Total Borrows</th>
                   <th>Active Loans</th>
@@ -177,7 +186,7 @@ const DashboardOverview = ({ notifications }) => {
             </table>
           </div>
         ) : (
-          <div className="empty-state">No member data available</div>
+          <div className="empty-state">No student data available</div>
         )}
       </div>
     </div>

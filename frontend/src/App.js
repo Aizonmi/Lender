@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 
-// Member A Components
-import MemberForm from './components/MemberForm';
-import MemberList from './components/MemberList';
-import ItemForm from './components/ItemForm';
-import ItemList from './components/ItemList';
+// Library Components
+import StudentForm from './components/StudentForm';
+import StudentList from './components/StudentList';
+import BookForm from './components/BookForm';
+import BookList from './components/BookList';
 
 // Member B Components
 import BorrowItem from './components/BorrowItem';
@@ -24,6 +24,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('members'); // For catalog: members/items
   const [notifications, setNotifications] = useState([]);
   const [hasOverdue, setHasOverdue] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     fetchNotifications();
@@ -45,15 +46,15 @@ function App() {
     <div className="App">
       <div className="container">
         <div className="header">
-          <h1>Lendify - Integrated Lending Platform</h1>
-          <p>Complete System Integration - All Sub-Systems Combined</p>
+          <h1>📚 Library Lending System</h1>
+          <p>Book Lending Management Platform</p>
         </div>
 
         {/* Global Overdue Alert */}
         {hasOverdue && notifications.length > 0 && (
           <div className="alert alert-danger">
-            <strong>⚠️ Overdue Items Alert!</strong>
-            <span>{notifications.length} item(s) are overdue.</span>
+            <strong>⚠️ Overdue Books Alert!</strong>
+            <span>{notifications.length} book(s) are overdue.</span>
           </div>
         )}
 
@@ -66,7 +67,7 @@ function App() {
               setActiveTab('members');
             }}
           >
-            📚 Catalog & Members
+            📚 Books & Students
           </button>
           <button
             className={`tab ${activeSystem === 'lending' ? 'active' : ''}`}
@@ -96,25 +97,25 @@ function App() {
                 className={`tab ${activeTab === 'members' ? 'active' : ''}`}
                 onClick={() => setActiveTab('members')}
               >
-                Members
+                Students
               </button>
               <button
                 className={`tab ${activeTab === 'items' ? 'active' : ''}`}
                 onClick={() => setActiveTab('items')}
               >
-                Items
+                Books
               </button>
             </div>
 
             {activeTab === 'members' && (
               <>
                 <div className="section">
-                  <h2>Add New Member</h2>
-                  <MemberForm />
+                  <h2>Add New Student</h2>
+                  <StudentForm onStudentAdded={() => setRefreshTrigger(prev => prev + 1)} />
                 </div>
                 <div className="section">
-                  <h2>All Members</h2>
-                  <MemberList />
+                  <h2>All Students</h2>
+                  <StudentList refreshTrigger={refreshTrigger} />
                 </div>
               </>
             )}
@@ -122,12 +123,12 @@ function App() {
             {activeTab === 'items' && (
               <>
                 <div className="section">
-                  <h2>Add New Item</h2>
-                  <ItemForm />
+                  <h2>Add New Book</h2>
+                  <BookForm onBookAdded={() => setRefreshTrigger(prev => prev + 1)} />
                 </div>
                 <div className="section">
-                  <h2>All Items</h2>
-                  <ItemList />
+                  <h2>All Books</h2>
+                  <BookList refreshTrigger={refreshTrigger} />
                 </div>
               </>
             )}
@@ -142,26 +143,26 @@ function App() {
                 className={`tab ${activeTab === 'borrow' ? 'active' : ''}`}
                 onClick={() => setActiveTab('borrow')}
               >
-                Borrow Item
+                Borrow Book
               </button>
               <button
                 className={`tab ${activeTab === 'return' ? 'active' : ''}`}
                 onClick={() => setActiveTab('return')}
               >
-                Return Item
+                Return Book
               </button>
             </div>
 
             {activeTab === 'borrow' && (
               <div className="section">
-                <h2>Available Items for Borrowing</h2>
+                <h2>Available Books for Borrowing</h2>
                 <BorrowItem />
               </div>
             )}
 
             {activeTab === 'return' && (
               <div className="section">
-                <h2>Currently Borrowed Items</h2>
+                <h2>Currently Borrowed Books</h2>
                 <BorrowedItems />
               </div>
             )}

@@ -2,8 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const Loan = require('../models/Loan');
-const Item = require('../models/Item');
-const Member = require('../models/Member');
+const Book = require('../models/Book');
+const Student = require('../models/Student');
 
 /**
  * @route   POST /api/loans/borrow
@@ -13,14 +13,14 @@ const Member = require('../models/Member');
 router.post('/borrow', [
   body('itemId')
     .notEmpty()
-    .withMessage('Item ID is required')
+    .withMessage('Book ID is required')
     .isMongoId()
-    .withMessage('Item ID must be a valid MongoDB ObjectId'),
+    .withMessage('Book ID must be a valid MongoDB ObjectId'),
   body('borrowerMemberId')
     .notEmpty()
-    .withMessage('Borrower member ID is required')
+    .withMessage('Borrower student ID is required')
     .isMongoId()
-    .withMessage('Borrower member ID must be a valid MongoDB ObjectId'),
+    .withMessage('Borrower student ID must be a valid MongoDB ObjectId'),
   body('dueDate')
     .notEmpty()
     .withMessage('Due date is required')
@@ -47,46 +47,37 @@ router.post('/borrow', [
 
     const { itemId, borrowerMemberId, dueDate } = req.body;
 
-    // Verify item exists and is available
-    const item = await Item.findById(itemId);
-    if (!item) {
+    // Verify book exists and is available
+    const book = await Book.findById(itemId);
+    if (!book) {
       return res.status(404).json({
         error: {
-          message: 'Item not found',
+          message: 'Book not found',
           status: 404
         }
       });
     }
 
-    if (!item.available) {
+    if (!book.available) {
       return res.status(409).json({
         error: {
-          message: 'Item is not available for borrowing',
+          message: 'Book is not available for borrowing',
           status: 409
         }
       });
     }
 
     // Verify borrower exists
-    const borrower = await Member.findById(borrowerMemberId);
+    const borrower = await Student.findById(borrowerMemberId);
     if (!borrower) {
       return res.status(404).json({
         error: {
-          message: 'Borrower member not found',
+          message: 'Borrower student not found',
           status: 404
         }
       });
     }
 
-    // Check if borrower is trying to borrow their own item
-    if (item.owner.toString() === borrowerMemberId) {
-      return res.status(400).json({
-        error: {
-          message: 'Cannot borrow your own item',
-          status: 400
-        }
-      });
-    }
 
     // Create loan record
     const loan = new Loan({
@@ -99,12 +90,12 @@ router.post('/borrow', [
 
     await loan.save();
 
-    // Update item availability
-    item.available = false;
-    await item.save();
+    // Update book availability
+    book.available = false;
+    await book.save();
 
     // Populate references for response
-    await loan.populate('itemId', 'title type owner');
+    await loan.populate('itemId', 'title author');
     await loan.populate('borrowerMemberId', 'name email');
 
     res.status(201).json({
@@ -174,15 +165,15 @@ router.post('/return', [
     loan.status = 'returned';
     await loan.save();
 
-    // Update item availability
-    const item = await Item.findById(loan.itemId);
-    if (item) {
-      item.available = true;
-      await item.save();
+    // Update book availability
+    const book = await Book.findById(loan.itemId);
+    if (book) {
+      book.available = true;
+      await book.save();
     }
 
     // Populate references for response
-    await loan.populate('itemId', 'title type owner');
+    await loan.populate('itemId', 'title author');
     await loan.populate('borrowerMemberId', 'name email');
 
     res.json({
@@ -226,7 +217,7 @@ router.get('/', async (req, res) => {
     }
 
     const loans = await Loan.find(query)
-      .populate('itemId', 'title type owner description')
+      .populate('itemId', 'title author description')
       .populate('borrowerMemberId', 'name email')
       .sort({ borrowDate: -1 });
 
@@ -254,7 +245,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const loan = await Loan.findById(req.params.id)
-      .populate('itemId', 'title type owner description')
+      .populate('itemId', 'title author description')
       .populate('borrowerMemberId', 'name email');
 
     if (!loan) {
@@ -297,25 +288,24 @@ router.get('/:id', async (req, res) => {
 
 /**
  * @route   GET /api/loans/available/items
- * @desc    Get list of available items for borrowing
+ * @desc    Get list of available books for borrowing
  * @access  Public
  */
 router.get('/available/items', async (req, res) => {
   try {
-    const items = await Item.find({ available: true })
-      .populate('owner', 'name email')
+    const books = await Book.find({ available: true })
       .sort({ createdAt: -1 });
 
     res.json({
-      message: 'Available items retrieved successfully',
-      count: items.length,
-      data: items
+      message: 'Available books retrieved successfully',
+      count: books.length,
+      data: books
     });
   } catch (error) {
-    console.error('Error fetching available items:', error);
+    console.error('Error fetching available books:', error);
     res.status(500).json({
       error: {
-        message: error.message || 'Failed to fetch available items',
+        message: error.message || 'Failed to fetch available books',
         status: 500
       }
     });
@@ -324,7 +314,7 @@ router.get('/available/items', async (req, res) => {
 
 /**
  * @route   GET /api/loans/borrowed/by/:memberId
- * @desc    Get list of items currently borrowed by a member
+ * @desc    Get list of books currently borrowed by a student
  * @access  Public
  */
 router.get('/borrowed/by/:memberId', async (req, res) => {
@@ -335,20 +325,20 @@ router.get('/borrowed/by/:memberId', async (req, res) => {
       borrowerMemberId: memberId,
       status: { $in: ['active', 'overdue'] }
     })
-      .populate('itemId', 'title type owner description')
+      .populate('itemId', 'title author description')
       .populate('borrowerMemberId', 'name email')
       .sort({ borrowDate: -1 });
 
     res.json({
-      message: 'Borrowed items retrieved successfully',
+      message: 'Borrowed books retrieved successfully',
       count: loans.length,
       data: loans
     });
   } catch (error) {
-    console.error('Error fetching borrowed items:', error);
+    console.error('Error fetching borrowed books:', error);
     res.status(500).json({
       error: {
-        message: error.message || 'Failed to fetch borrowed items',
+        message: error.message || 'Failed to fetch borrowed books',
         status: 500
       }
     });

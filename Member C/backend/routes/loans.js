@@ -30,9 +30,8 @@ router.get('/history', async (req, res) => {
     }
 
     const loans = await Loan.find(query)
-      .populate('itemId', 'title type owner description')
+      .populate('itemId', 'title author description')
       .populate('borrowerMemberId', 'name email')
-      .populate('itemId.owner', 'name email')
       .sort({ borrowDate: -1 });
 
     res.json({

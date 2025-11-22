@@ -37,12 +37,12 @@ const connectDB = async () => {
 connectDB();
 
 // Routes
-app.use('/api/members', require('./routes/members'));
-app.use('/api/items', require('./routes/items'));
+app.use('/api/students', require('./routes/students'));
+app.use('/api/books', require('./routes/books'));
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Member A Backend is running' });
+  res.json({ status: 'OK', message: 'Library Backend is running' });
 });
 
 // Error handling middleware

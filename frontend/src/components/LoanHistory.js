@@ -11,15 +11,13 @@ const LoanHistory = () => {
   });
 
   useEffect(() => {
-    fetchLoanHistory();
-    
-    const interval = setInterval(fetchLoanHistory, 10000);
-    return () => clearInterval(interval);
+    fetchLoanHistory(true); // Show loading on initial load or filter change
+    // Removed auto-refresh - use manual refresh button instead
   }, [filters]);
 
-  const fetchLoanHistory = async () => {
+  const fetchLoanHistory = async (showLoading = false) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       const params = {};
       if (filters.startDate) params.startDate = filters.startDate;
       if (filters.endDate) params.endDate = filters.endDate;
@@ -30,7 +28,7 @@ const LoanHistory = () => {
     } catch (err) {
       console.error('Error fetching loan history:', err);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
@@ -61,6 +59,15 @@ const LoanHistory = () => {
 
   return (
     <div>
+      <div style={{ marginBottom: '15px', display: 'flex', justifyContent: 'flex-end' }}>
+        <button 
+          className="btn btn-secondary" 
+          onClick={() => fetchLoanHistory(false)}
+          style={{ padding: '8px 16px', fontSize: '0.9rem' }}
+        >
+          🔄 Refresh
+        </button>
+      </div>
       <div className="filter-controls">
         <label>
           Start Date:
@@ -106,8 +113,8 @@ const LoanHistory = () => {
           <table>
             <thead>
               <tr>
-                <th>Item Title</th>
-                <th>Type</th>
+                <th>Book Title</th>
+                <th>Author</th>
                 <th>Borrower</th>
                 <th>Borrow Date</th>
                 <th>Due Date</th>
@@ -119,9 +126,7 @@ const LoanHistory = () => {
               {loans.map((loan) => (
                 <tr key={loan._id}>
                   <td><strong>{loan.itemId?.title || 'Unknown'}</strong></td>
-                  <td style={{ textTransform: 'capitalize' }}>
-                    {loan.itemId?.type || '-'}
-                  </td>
+                  <td>{loan.itemId?.author || '-'}</td>
                   <td>
                     {loan.borrowerMemberId?.name || 'Unknown'}
                     {loan.borrowerMemberId?.email && (

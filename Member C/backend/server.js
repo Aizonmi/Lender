@@ -42,7 +42,7 @@ app.use('/api/loans', require('./routes/loans'));
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Member C Backend is running' });
+  res.json({ status: 'OK', message: 'Dashboard Backend is running' });
 });
 
 // Error handling middleware

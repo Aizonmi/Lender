@@ -10,15 +10,13 @@ const CurrentBorrows = () => {
   });
 
   useEffect(() => {
-    fetchCurrentBorrows();
-    
-    const interval = setInterval(fetchCurrentBorrows, 10000);
-    return () => clearInterval(interval);
+    fetchCurrentBorrows(true); // Show loading on initial load or filter change
+    // Removed auto-refresh - use manual refresh button instead
   }, [filters]);
 
-  const fetchCurrentBorrows = async () => {
+  const fetchCurrentBorrows = async (showLoading = false) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       const params = {};
       if (filters.startDate) params.startDate = filters.startDate;
       if (filters.endDate) params.endDate = filters.endDate;
@@ -28,7 +26,7 @@ const CurrentBorrows = () => {
     } catch (err) {
       console.error('Error fetching current borrows:', err);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
@@ -63,6 +61,15 @@ const CurrentBorrows = () => {
 
   return (
     <div>
+      <div style={{ marginBottom: '15px', display: 'flex', justifyContent: 'flex-end' }}>
+        <button 
+          className="btn btn-secondary" 
+          onClick={() => fetchCurrentBorrows(false)}
+          style={{ padding: '8px 16px', fontSize: '0.9rem' }}
+        >
+          🔄 Refresh
+        </button>
+      </div>
       <div className="filter-controls">
         <label>
           Start Date:
@@ -94,9 +101,8 @@ const CurrentBorrows = () => {
           <table>
             <thead>
               <tr>
-                <th>Item Title</th>
-                <th>Type</th>
-                <th>Owner</th>
+                <th>Book Title</th>
+                <th>Author</th>
                 <th>Borrower</th>
                 <th>Borrow Date</th>
                 <th>Due Date</th>
@@ -109,17 +115,7 @@ const CurrentBorrows = () => {
                 return (
                   <tr key={loan._id} style={overdue ? { backgroundColor: '#fff3cd' } : {}}>
                     <td><strong>{loan.itemId?.title || 'Unknown'}</strong></td>
-                    <td style={{ textTransform: 'capitalize' }}>
-                      {loan.itemId?.type || '-'}
-                    </td>
-                    <td>
-                      {loan.itemId?.owner?.name || 'Unknown'}
-                      {loan.itemId?.owner?.email && (
-                        <div style={{ fontSize: '0.85rem', color: '#666' }}>
-                          {loan.itemId.owner.email}
-                        </div>
-                      )}
-                    </td>
+                    <td>{loan.itemId?.author || '-'}</td>
                     <td>
                       {loan.borrowerMemberId?.name || 'Unknown'}
                       {loan.borrowerMemberId?.email && (

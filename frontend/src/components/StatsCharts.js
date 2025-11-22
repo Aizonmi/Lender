@@ -34,31 +34,25 @@ const StatsCharts = () => {
     return <div className="empty-state">No statistics available for charts</div>;
   }
 
-  // Prepare data for most borrowed items chart
+  // Prepare data for most borrowed books chart
   const mostBorrowedData = stats.mostBorrowedItems.map(item => ({
     name: item.title.length > 15 ? item.title.substring(0, 15) + '...' : item.title,
     fullName: item.title,
     borrows: item.borrowCount,
   }));
 
-  // Prepare data for borrow counts by member chart
+  // Prepare data for borrow counts by student chart
   const memberBorrowsData = stats.borrowCountsByMember.map(member => ({
     name: member.name.length > 15 ? member.name.substring(0, 15) + '...' : member.name,
     fullName: member.name,
     borrows: member.borrowCount,
   }));
 
-  // Prepare data for loans by type pie chart
-  const loansByTypeData = stats.loansByType.map(item => ({
-    name: item.type.charAt(0).toUpperCase() + item.type.slice(1),
-    value: item.count,
-  }));
-
   return (
     <div>
-      {/* Most Borrowed Items Chart */}
+      {/* Most Borrowed Books Chart */}
       <div className="chart-container">
-        <h2 style={{ marginBottom: '20px', color: '#2c3e50' }}>Top 5 Most Borrowed Items</h2>
+        <h2 style={{ marginBottom: '20px', color: '#2c3e50' }}>Top 5 Most Borrowed Books</h2>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={mostBorrowedData}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -77,9 +71,9 @@ const StatsCharts = () => {
         </ResponsiveContainer>
       </div>
 
-      {/* Borrow Counts by Member Chart */}
+      {/* Borrow Counts by Student Chart */}
       <div className="chart-container">
-        <h2 style={{ marginBottom: '20px', color: '#2c3e50' }}>Top 5 Members by Borrow Count</h2>
+        <h2 style={{ marginBottom: '20px', color: '#2c3e50' }}>Top 5 Students by Borrow Count</h2>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={memberBorrowsData}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -98,29 +92,6 @@ const StatsCharts = () => {
         </ResponsiveContainer>
       </div>
 
-      {/* Loans by Type Pie Chart */}
-      <div className="chart-container">
-        <h2 style={{ marginBottom: '20px', color: '#2c3e50' }}>Loans by Item Type</h2>
-        <ResponsiveContainer width="100%" height={300}>
-          <PieChart>
-            <Pie
-              data={loansByTypeData}
-              cx="50%"
-              cy="50%"
-              labelLine={false}
-              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-              outerRadius={100}
-              fill="#8884d8"
-              dataKey="value"
-            >
-              {loansByTypeData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-              ))}
-            </Pie>
-            <Tooltip />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
 
       {/* Summary Statistics */}
       <div className="section">
@@ -135,19 +106,19 @@ const StatsCharts = () => {
             </thead>
             <tbody>
               <tr>
-                <td>Total Members</td>
+                <td>Total Students</td>
                 <td><strong>{stats.overall.totalMembers}</strong></td>
               </tr>
               <tr>
-                <td>Total Items</td>
+                <td>Total Books</td>
                 <td><strong>{stats.overall.totalItems}</strong></td>
               </tr>
               <tr>
-                <td>Available Items</td>
+                <td>Available Books</td>
                 <td><strong>{stats.overall.availableItems}</strong></td>
               </tr>
               <tr>
-                <td>Borrowed Items</td>
+                <td>Borrowed Books</td>
                 <td><strong>{stats.overall.borrowedItems}</strong></td>
               </tr>
               <tr>

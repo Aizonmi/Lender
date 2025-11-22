@@ -29,20 +29,26 @@ const apiC = axios.create({
   },
 });
 
-// Members API (Member A)
-export const membersAPI = {
-  getAll: () => apiA.get('/members'),
-  getById: (id) => apiA.get(`/members/${id}`),
-  create: (memberData) => apiA.post('/members', memberData),
+// Students API (Member A)
+export const studentsAPI = {
+  getAll: () => apiA.get('/students'),
+  getById: (id) => apiA.get(`/students/${id}`),
+  create: (studentData) => apiA.post('/students', studentData),
+  delete: (id) => apiA.delete(`/students/${id}`),
 };
 
-// Items API (Member A)
-export const itemsAPI = {
-  getAll: (params) => apiA.get('/items', { params }),
-  getById: (id) => apiA.get(`/items/${id}`),
-  create: (itemData) => apiA.post('/items', itemData),
-  update: (id, itemData) => apiA.put(`/items/${id}`, itemData),
+// Books API (Member A)
+export const booksAPI = {
+  getAll: (params) => apiA.get('/books', { params }),
+  getById: (id) => apiA.get(`/books/${id}`),
+  create: (bookData) => apiA.post('/books', bookData),
+  update: (id, bookData) => apiA.put(`/books/${id}`, bookData),
+  delete: (id) => apiA.delete(`/books/${id}`),
 };
+
+// Legacy aliases for backward compatibility during transition
+export const membersAPI = studentsAPI;
+export const itemsAPI = booksAPI;
 
 // Loans API (Member B)
 export const loansAPI = {

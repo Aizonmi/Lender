@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const Loan = require('../models/Loan');
-const Item = require('../models/Item');
-const Member = require('../models/Member');
+const Book = require('../models/Book');
+const Student = require('../models/Student');
 
 /**
  * @route   GET /api/dashboard/overdue
- * @desc    Get items past due date
+ * @desc    Get books past due date
  * @access  Public
  */
 router.get('/overdue', async (req, res) => {
@@ -19,7 +19,7 @@ router.get('/overdue', async (req, res) => {
       returnDate: null,
       dueDate: { $lt: now }
     })
-      .populate('itemId', 'title type owner description')
+      .populate('itemId', 'title author owner description')
       .populate('borrowerMemberId', 'name email')
       .sort({ dueDate: 1 }); // Sort by due date, earliest first
 
@@ -54,7 +54,7 @@ router.get('/overdue', async (req, res) => {
  */
 router.get('/stats', async (req, res) => {
   try {
-    // Most borrowed items (top 5)
+    // Most borrowed books (top 5)
     const mostBorrowedItems = await Loan.aggregate([
       {
         $group: {
@@ -69,7 +69,7 @@ router.get('/stats', async (req, res) => {
       { $limit: 5 },
       {
         $lookup: {
-          from: 'items',
+          from: 'books',
           localField: '_id',
           foreignField: '_id',
           as: 'item'
@@ -80,14 +80,14 @@ router.get('/stats', async (req, res) => {
         $project: {
           itemId: '$_id',
           title: '$item.title',
-          type: '$item.type',
+          author: '$item.author',
           borrowCount: 1,
           activeBorrows: 1
         }
       }
     ]);
 
-    // Borrow counts by member (top 5)
+    // Borrow counts by student (top 5)
     const borrowCountsByMember = await Loan.aggregate([
       {
         $group: {
@@ -105,7 +105,7 @@ router.get('/stats', async (req, res) => {
       { $limit: 5 },
       {
         $lookup: {
-          from: 'members',
+          from: 'students',
           localField: '_id',
           foreignField: '_id',
           as: 'member'
@@ -130,37 +130,11 @@ router.get('/stats', async (req, res) => {
     const returnedLoans = await Loan.countDocuments({ status: 'returned' });
     const overdueLoans = await Loan.countDocuments({ status: 'overdue' });
     
-    const totalItems = await Item.countDocuments();
-    const availableItems = await Item.countDocuments({ available: true });
+    const totalItems = await Book.countDocuments();
+    const availableItems = await Book.countDocuments({ available: true });
     const borrowedItems = totalItems - availableItems;
     
-    const totalMembers = await Member.countDocuments();
-
-    // Loans by item type
-    const loansByType = await Loan.aggregate([
-      {
-        $lookup: {
-          from: 'items',
-          localField: 'itemId',
-          foreignField: '_id',
-          as: 'item'
-        }
-      },
-      { $unwind: '$item' },
-      {
-        $group: {
-          _id: '$item.type',
-          count: { $sum: 1 }
-        }
-      },
-      { $sort: { count: -1 } },
-      {
-        $project: {
-          type: '$_id',
-          count: 1
-        }
-      }
-    ]);
+    const totalMembers = await Student.countDocuments();
 
     res.json({
       message: 'Dashboard statistics retrieved successfully',
@@ -176,8 +150,7 @@ router.get('/stats', async (req, res) => {
           overdueLoans
         },
         mostBorrowedItems,
-        borrowCountsByMember,
-        loansByType
+        borrowCountsByMember
       }
     });
   } catch (error) {
@@ -251,14 +224,14 @@ router.get('/notifications', async (req, res) => {
       returnDate: null,
       dueDate: { $lt: now }
     })
-      .populate('itemId', 'title type')
+      .populate('itemId', 'title author')
       .populate('borrowerMemberId', 'name email')
       .limit(10)
       .sort({ dueDate: 1 });
 
     const notifications = overdueLoans.map(loan => ({
       type: 'overdue',
-      message: `Item "${loan.itemId.title}" is overdue. Borrower: ${loan.borrowerMemberId.name}`,
+      message: `Book "${loan.itemId.title}" is overdue. Borrower: ${loan.borrowerMemberId.name}`,
       loanId: loan._id,
       itemId: loan.itemId._id,
       borrowerId: loan.borrowerMemberId._id,

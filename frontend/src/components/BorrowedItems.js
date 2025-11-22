@@ -1,46 +1,38 @@
 import React, { useState, useEffect } from 'react';
-import { loansAPI, membersAPI } from '../services/api';
+import { loansAPI, studentsAPI } from '../services/api';
 
 const BorrowedItems = () => {
   const [borrowedLoans, setBorrowedLoans] = useState([]);
-  const [members, setMembers] = useState([]);
+  const [students, setStudents] = useState([]);
   const [selectedMember, setSelectedMember] = useState('');
   const [loading, setLoading] = useState(true);
   const [returning, setReturning] = useState(null);
   const [message, setMessage] = useState({ type: '', text: '' });
 
   useEffect(() => {
-    fetchMembers();
+    fetchStudents();
   }, []);
 
   useEffect(() => {
     if (selectedMember) {
-      fetchBorrowedItems();
-      
-      // Refresh every 5 seconds
-      const interval = setInterval(fetchBorrowedItems, 5000);
-      return () => clearInterval(interval);
+      fetchBorrowedItems(true);
     } else {
-      fetchAllActiveLoans();
-      
-      // Refresh every 5 seconds
-      const interval = setInterval(fetchAllActiveLoans, 5000);
-      return () => clearInterval(interval);
+      fetchAllActiveLoans(true);
     }
   }, [selectedMember]);
 
-  const fetchMembers = async () => {
+  const fetchStudents = async () => {
     try {
-      const response = await membersAPI.getAll();
-      setMembers(response.data.data || []);
+      const response = await studentsAPI.getAll();
+      setStudents(response.data.data || []);
     } catch (err) {
-      console.error('Error fetching members:', err);
+      console.error('Error fetching students:', err);
     }
   };
 
-  const fetchAllActiveLoans = async () => {
+  const fetchAllActiveLoans = async (showLoading = false) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       const response = await loansAPI.getAll({ status: 'active' });
       const activeLoans = response.data.data || [];
       
@@ -56,13 +48,13 @@ const BorrowedItems = () => {
         text: err.response?.data?.error?.message || 'Failed to load borrowed items',
       });
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
-  const fetchBorrowedItems = async () => {
+  const fetchBorrowedItems = async (showLoading = false) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       const response = await loansAPI.getBorrowedByMember(selectedMember);
       setBorrowedLoans(response.data.data || []);
     } catch (err) {
@@ -72,7 +64,7 @@ const BorrowedItems = () => {
         text: err.response?.data?.error?.message || 'Failed to load borrowed items',
       });
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
@@ -89,14 +81,14 @@ const BorrowedItems = () => {
       
       setMessage({
         type: 'success',
-        text: `Item "${itemTitle}" returned successfully!`,
+        text: `Book "${itemTitle}" returned successfully!`,
       });
 
-      // Refresh borrowed items
+      // Refresh borrowed items (no loading spinner)
       if (selectedMember) {
-        fetchBorrowedItems();
+        fetchBorrowedItems(false);
       } else {
-        fetchAllActiveLoans();
+        fetchAllActiveLoans(false);
       }
 
       setTimeout(() => {
@@ -137,36 +129,45 @@ const BorrowedItems = () => {
         </div>
       )}
 
-      <div style={{ marginBottom: '20px' }}>
-        <label htmlFor="memberFilter" style={{ display: 'block', marginBottom: '5px', fontWeight: '600' }}>
-          Filter by Member (Optional):
-        </label>
-        <select
-          id="memberFilter"
-          value={selectedMember}
-          onChange={(e) => setSelectedMember(e.target.value)}
-          style={{ 
-            width: '100%', 
-            maxWidth: '400px', 
-            padding: '10px', 
-            border: '1px solid #ddd', 
-            borderRadius: '4px' 
-          }}
+      <div style={{ marginBottom: '20px', display: 'flex', gap: '15px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+        <div style={{ flex: '1', minWidth: '200px' }}>
+          <label htmlFor="memberFilter" style={{ display: 'block', marginBottom: '5px', fontWeight: '600' }}>
+            Filter by Student (Optional):
+          </label>
+          <select
+            id="memberFilter"
+            value={selectedMember}
+            onChange={(e) => setSelectedMember(e.target.value)}
+            style={{ 
+              width: '100%', 
+              maxWidth: '400px', 
+              padding: '10px', 
+              border: '1px solid #ddd', 
+              borderRadius: '4px' 
+            }}
+          >
+            <option value="">All Students</option>
+            {students.map((student) => (
+              <option key={student._id} value={student._id}>
+                {student.name} ({student.email})
+              </option>
+            ))}
+          </select>
+        </div>
+        <button 
+          className="btn btn-secondary" 
+          onClick={() => selectedMember ? fetchBorrowedItems(false) : fetchAllActiveLoans(false)}
+          style={{ padding: '8px 16px', fontSize: '0.9rem', height: 'fit-content' }}
         >
-          <option value="">All Members</option>
-          {members.map((member) => (
-            <option key={member._id} value={member._id}>
-              {member.name} ({member.email})
-            </option>
-          ))}
-        </select>
+          🔄 Refresh
+        </button>
       </div>
 
       {borrowedLoans.length === 0 ? (
         <div className="empty-state">
-          <p>No borrowed items found.</p>
+          <p>No borrowed books found.</p>
           {selectedMember && (
-            <p>This member has no active loans.</p>
+            <p>This student has no active loans.</p>
           )}
         </div>
       ) : (
@@ -174,8 +175,8 @@ const BorrowedItems = () => {
           <table>
             <thead>
               <tr>
-                <th>Item Title</th>
-                <th>Item Type</th>
+                <th>Book Title</th>
+                <th>Author</th>
                 <th>Borrower</th>
                 <th>Borrow Date</th>
                 <th>Due Date</th>
@@ -189,9 +190,7 @@ const BorrowedItems = () => {
                 return (
                   <tr key={loan._id} style={overdue ? { backgroundColor: '#fff3cd' } : {}}>
                     <td><strong>{loan.itemId?.title || 'Unknown'}</strong></td>
-                    <td style={{ textTransform: 'capitalize' }}>
-                      {loan.itemId?.type || '-'}
-                    </td>
+                    <td>{loan.itemId?.author || '-'}</td>
                     <td>
                       {loan.borrowerMemberId?.name || 'Unknown'}
                       {loan.borrowerMemberId?.email && (

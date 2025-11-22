@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { loansAPI, membersAPI } from '../services/api';
+import { loansAPI, studentsAPI } from '../services/api';
 
 const BorrowItem = () => {
   const [availableItems, setAvailableItems] = useState([]);
-  const [members, setMembers] = useState([]);
+  const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [borrowing, setBorrowing] = useState(null);
   const [message, setMessage] = useState({ type: '', text: '' });
@@ -13,20 +13,13 @@ const BorrowItem = () => {
   });
 
   useEffect(() => {
-    fetchAvailableItems();
-    fetchMembers();
-    
-    // Refresh every 5 seconds
-    const interval = setInterval(() => {
-      fetchAvailableItems();
-    }, 5000);
-    
-    return () => clearInterval(interval);
+    fetchAvailableItems(true); // Show loading on initial load
+    fetchStudents();
   }, []);
 
-  const fetchAvailableItems = async () => {
+  const fetchAvailableItems = async (showLoading = false) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       const response = await loansAPI.getAvailableItems();
       setAvailableItems(response.data.data || []);
     } catch (err) {
@@ -36,16 +29,16 @@ const BorrowItem = () => {
         text: err.response?.data?.error?.message || 'Failed to load available items',
       });
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
-  const fetchMembers = async () => {
+  const fetchStudents = async () => {
     try {
-      const response = await membersAPI.getAll();
-      setMembers(response.data.data || []);
+      const response = await studentsAPI.getAll();
+      setStudents(response.data.data || []);
     } catch (err) {
-      console.error('Error fetching members:', err);
+      console.error('Error fetching students:', err);
     }
   };
 
@@ -71,11 +64,11 @@ const BorrowItem = () => {
 
       setMessage({
         type: 'success',
-        text: `Item "${response.data.data.itemId.title}" borrowed successfully!`,
+        text: `Book "${response.data.data.itemId.title}" borrowed successfully!`,
       });
 
-      // Refresh available items
-      fetchAvailableItems();
+      // Refresh available items (no loading spinner)
+      fetchAvailableItems(false);
 
       // Reset form
       setFormData({
@@ -126,6 +119,16 @@ const BorrowItem = () => {
         </div>
       )}
 
+      <div style={{ marginBottom: '15px', display: 'flex', justifyContent: 'flex-end' }}>
+        <button 
+          className="btn btn-secondary" 
+          onClick={() => fetchAvailableItems(false)}
+          style={{ padding: '8px 16px', fontSize: '0.9rem' }}
+        >
+          🔄 Refresh Items
+        </button>
+      </div>
+
       {/* Borrower and Due Date Selection */}
       <div style={{ 
         background: '#f8f9fa', 
@@ -136,17 +139,17 @@ const BorrowItem = () => {
         <h3 style={{ marginBottom: '15px', color: '#2c3e50' }}>Borrower Information</h3>
         <div className="form-row">
           <div className="form-group">
-            <label htmlFor="borrowerMemberId">Select Borrower *</label>
+            <label htmlFor="borrowerMemberId">Select Student Borrower *</label>
             <select
               id="borrowerMemberId"
               name="borrowerMemberId"
               value={formData.borrowerMemberId}
               onChange={handleFormChange}
             >
-              <option value="">Select a member...</option>
-              {members.map((member) => (
-                <option key={member._id} value={member._id}>
-                  {member.name} ({member.email})
+              <option value="">Select a student...</option>
+              {students.map((student) => (
+                <option key={student._id} value={student._id}>
+                  {student.name} ({student.email})
                 </option>
               ))}
             </select>
@@ -165,14 +168,14 @@ const BorrowItem = () => {
           </div>
         </div>
         <p style={{ fontSize: '0.875rem', color: '#666', marginTop: '10px' }}>
-          Select a borrower and due date above, then click "Borrow" on any available item below.
+          Select a student borrower and due date above, then click "Borrow" on any available book below.
         </p>
       </div>
 
       {availableItems.length === 0 ? (
         <div className="empty-state">
-          <p>No available items found.</p>
-          <p>All items are currently borrowed.</p>
+          <p>No available books found.</p>
+          <p>All books are currently borrowed.</p>
         </div>
       ) : (
         <div className="item-grid">
@@ -180,24 +183,25 @@ const BorrowItem = () => {
             <div key={item._id} className="card">
               <div className="card-header">
                 <div className="card-title">{item.title}</div>
-                <span style={{ 
-                  textTransform: 'capitalize', 
-                  color: '#666',
-                  fontSize: '0.875rem'
-                }}>
-                  {item.type}
-                </span>
+                {item.author && (
+                  <span style={{ 
+                    color: '#666',
+                    fontSize: '0.875rem'
+                  }}>
+                    by {item.author}
+                  </span>
+                )}
               </div>
               <div className="card-body">
                 {item.description && <p>{item.description}</p>}
-                <p style={{ marginTop: '10px', fontSize: '0.9rem' }}>
-                  <strong>Owner:</strong> {item.owner?.name || 'Unknown'}
-                </p>
-                {item.owner?.email && (
-                  <p style={{ fontSize: '0.85rem', color: '#666' }}>
-                    {item.owner.email}
+                {item.isbn && (
+                  <p style={{ fontSize: '0.85rem', color: '#666', marginTop: '5px' }}>
+                    <strong>ISBN:</strong> {item.isbn}
                   </p>
                 )}
+                <p style={{ marginTop: '10px', fontSize: '0.9rem', color: '#666', fontStyle: 'italic' }}>
+                  Library Book
+                </p>
               </div>
               <div className="card-footer">
                 <button

@@ -34,10 +34,7 @@ const loanSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: {
-      values: ['active', 'returned', 'overdue'],
-      message: 'Status must be one of: active, returned, overdue'
-    },
+    enum: ['active', 'overdue', 'returned'],
     default: 'active',
     index: true
   },
@@ -51,36 +48,25 @@ const loanSchema = new mongoose.Schema({
   }
 });
 
-// Update status to overdue if past due date and still active
-loanSchema.methods.checkOverdue = function() {
-  if (this.status === 'active' && this.dueDate < new Date() && !this.returnDate) {
-    this.status = 'overdue';
-    return true;
-  }
-  return false;
-};
-
-// Indexes for faster queries
-loanSchema.index({ borrowerMemberId: 1, status: 1 });
-loanSchema.index({ itemId: 1, status: 1 });
-loanSchema.index({ dueDate: 1, status: 1 });
-
-// Pre-save hook to update status
 loanSchema.pre('save', function(next) {
   this.updatedAt = Date.now();
   
-  // If returnDate is set, status should be returned
-  if (this.returnDate && this.status !== 'returned') {
+  // Auto-update status based on dates
+  if (this.returnDate) {
     this.status = 'returned';
-  }
-  
-  // Check if overdue
-  if (this.status === 'active' && this.dueDate < new Date() && !this.returnDate) {
+  } else if (this.dueDate && new Date() > this.dueDate) {
     this.status = 'overdue';
+  } else if (!this.returnDate) {
+    this.status = 'active';
   }
   
   next();
 });
+
+// Indexes for faster queries
+loanSchema.index({ borrowerMemberId: 1, status: 1 });
+loanSchema.index({ itemId: 1, status: 1 });
+loanSchema.index({ dueDate: 1 });
 
 module.exports = mongoose.model('Loan', loanSchema);
 

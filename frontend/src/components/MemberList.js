@@ -6,9 +6,9 @@ const MemberList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const fetchMembers = async () => {
+  const fetchMembers = async (showLoading = false) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       setError(null);
       const response = await membersAPI.getAll();
       setMembers(response.data.data || []);
@@ -16,16 +16,12 @@ const MemberList = () => {
       setError(err.response?.data?.error?.message || 'Failed to fetch members');
       console.error('Error fetching members:', err);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchMembers();
-    
-    // Refresh list every 5 seconds
-    const interval = setInterval(fetchMembers, 5000);
-    return () => clearInterval(interval);
+    fetchMembers(true); // Show loading only on initial load
   }, []);
 
   if (loading) {
@@ -50,8 +46,19 @@ const MemberList = () => {
   }
 
   return (
-    <div className="table-container">
-      <table>
+    <div>
+      <div style={{ marginBottom: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h3 style={{ margin: 0, color: '#2c3e50' }}>Members List</h3>
+        <button 
+          className="btn btn-secondary" 
+          onClick={() => fetchMembers(false)}
+          style={{ padding: '8px 16px', fontSize: '0.9rem' }}
+        >
+          🔄 Refresh
+        </button>
+      </div>
+      <div className="table-container">
+        <table>
         <thead>
           <tr>
             <th>Name</th>
@@ -75,6 +82,7 @@ const MemberList = () => {
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 };
